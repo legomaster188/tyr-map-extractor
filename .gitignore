@@ -1,0 +1,5 @@
+bin/
+obj/
+out/
+oo2core*.dll
+__pycache__/
