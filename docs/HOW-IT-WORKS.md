@@ -9,7 +9,7 @@ A Tyr map package is mostly empty. Walk `Map_Divide.umap` looking for static
 mesh components and you get 22 meshes: some pebbles, some grass, seven tarps
 and three cliffs. The map actually has 169 meshes across 81 placements.
 
-The missing 147 are in **Packed Level Actors** — UE5's `BP_LI_*` blueprints,
+The missing 147 are in **Packed Level Actors**, UE5's `BP_LI_*` blueprints,
 filed under `/Game/World/<Map>/PLA/`. A packed level actor bakes a group of
 props into one blueprint with its own ISM/HISM components, and the level then
 places instances of that blueprint. The catch is where the geometry lives:
@@ -22,8 +22,7 @@ So `--meshscene` is class-driven rather than package-driven:
 
 1. Walk the map's exports for actors whose class is a `BP_LI_*` blueprint.
    Read each actor's own world transform from its `RootComponent`.
-2. Load that blueprint's class package and collect its component templates —
-   the ISM/HISM components with the real `StaticMesh` and the real
+2. Load that blueprint's class package and collect its component templates, the ISM/HISM components with the real `StaticMesh` and the real
    `PerInstanceSMData` array.
 3. For each per-instance transform in the template, compose
    `actorTransform ∘ componentRelative ∘ instanceRelative` and emit one world
@@ -49,7 +48,7 @@ quietly found nothing looks different from one that found nothing to find.
 
 ## Destructibles carry no static mesh at all
 
-A destructible prop — barriers, walls, debris piles, crashed ship parts — is a
+A destructible prop, barriers, walls, debris piles, crashed ship parts, is a
 Chaos `UGeometryCollectionComponent`. It has no `StaticMesh` property anywhere
 in its chain, so anything that asks for `StaticMesh` gets null and skips it.
 That was 37 placements missing near Wind Valley's centre and 198 on Fields,
@@ -59,13 +58,13 @@ Two things made it quiet rather than loud. CUE4Parse does not model
 `UGeometryCollectionComponent` as a `UStaticMeshComponent` subclass, so it was
 never in the template set at all. And every one of these blueprints inherits
 from `BP_Destructible_Prop_Base`, which contributes one **empty**
-`UStaticMeshComponent` — enough to keep the component count non-zero and
+`UStaticMeshComponent`, enough to keep the component count non-zero and
 produce one "unresolved component" per destructible.
 
 The collection names its own un-fractured mesh. `--meshscene` reads
 `RestCollection` and then, in priority order:
 
-1. **`RootProxyData.ProxyMeshes`** — UE's own "what this looks like before it
+1. **`RootProxyData.ProxyMeshes`**, UE's own "what this looks like before it
    breaks", with a `MeshTransforms` entry per proxy mesh. Fields' 12
    collections all resolve here.
 2. **`AutoInstanceMeshes`, and only when it holds exactly one entry.** Several
@@ -76,7 +75,7 @@ The collection names its own un-fractured mesh. `--meshscene` reads
    used. It is the one route that can be quietly wrong:
    `GC_RidgeWall_01_Pile_Debris_01` is filed under `Props/Interactive_Field_01`
    while its source mesh `SM_RidgeWall_01_Pile_Debris_01` lives under
-   `Structures/RidgeWall_01`, so a folder-local guess misses — and on a map
+   `Structures/RidgeWall_01`, so a folder-local guess misses, and on a map
    where some other `SM_` happens to sit in that folder, it hits the wrong
    thing instead of missing.
 
@@ -126,7 +125,7 @@ run time.
 
 **The quad frame is not the world frame, and every one of these landscapes
 carries yaw −90.** Skip that and the terrain lands rotated. The height grid
-above is already resampled onto world axes, so it does not need the yaw — but
+above is already resampled onto world axes, so it does not need the yaw, but
 anything in *quad* space does, and both the weightmaps and the terrain bake
 below are in quad space:
 
@@ -141,13 +140,12 @@ yaw 0 the Y range comes out mirrored. The map's own
 
 ## Terrain colour: the material is stylised, so bake it instead
 
-The obvious plan — pull each painted layer's albedo texture and blend them by
-weight — does not work here, because those textures do not exist.
+The obvious plan, pull each painted layer's albedo texture and blend them by
+weight, does not work here, because those textures do not exist.
 
 Every map's Landscape points at `MI_Landscape_<Map>_01` over
 `M_Landscape_<Map>_01`. Read the flattened parameters (`--dump` the material
-instance) and each painted layer — Cliff, Grass, Sand, Mud, Path, FloorCity —
-contributes only a `_GRH` map (packed gloss/roughness/height, greyscale) and a
+instance) and each painted layer, Cliff, Grass, Sand, Mud, Path, FloorCity, contributes only a `_GRH` map (packed gloss/roughness/height, greyscale) and a
 `_NM` normal. There is no colour texture. The colour comes from
 `<Layer> Color Variation 1..4` **vector** parameters plus a
 `<Layer>/Color Curve` scalar, computed in the shader rather than sampled.
@@ -160,11 +158,11 @@ Map`, pointing at `/Game/World/<Map>/Landscape/Textures/T_Landscape_C` /
 `_NM` / `_R`. That is the game's own material output for the whole landscape,
 baked to one 2048² texture, and the game itself switches to it past
 `RVT Blend Distance Start`. It is a real terrain albedo with none of a
-minimap's furniture — no contour lines, no painted drop shadows, no icons.
+minimap's furniture, no contour lines, no painted drop shadows, no icons.
 
 Five of the six maps have one. Where the material instance does not override
 the parameter, the reference lives in the parent material's expression graph,
-which cooking strips — but the asset is at the same path under the same name,
+which cooking strips, but the asset is at the same path under the same name,
 so fetch it there by convention. Expanse has no `Landscape/Textures` folder at
 all and has no bake; it degrades to whatever shading a renderer does from the
 heights alone. **Do not let a missing texture fall back to another map's.**
@@ -184,7 +182,7 @@ Getting these out:
 `--landscapemat` reports, for one map: the material assigned to each Landscape
 actor (the thing to then `--dump` for its parameters), the landscape's
 location/rotation/scale (that is where the yaw comes from), and every
-`LandscapeComponent`'s **weightmap allocation** — which painted layer lives in
+`LandscapeComponent`'s **weightmap allocation**, which painted layer lives in
 which channel of which weightmap texture, plus the component's `SectionBase`
 so the tiles can be stitched into one map-wide image. With `--texout` it also
 decodes every distinct weightmap texture to PNG.
@@ -214,7 +212,7 @@ about a mapping file dumped from an older build.
 
 `--meshlod first` (the default) writes `<Mesh>.glb` with LOD0 only.
 `--meshlod all` writes `<Mesh>_LOD<N>.glb`, one file per level, **beside** the
-plain file rather than replacing it — so both naming schemes can coexist and a
+plain file rather than replacing it, so both naming schemes can coexist and a
 renderer can keep structural geometry on LOD0 while reading a cheaper level
 for foliage. Every `.glb` records its own vertex and triangle counts, and the
 scene JSON records `lodTriangles` for every level, so the choice can be made
@@ -231,7 +229,7 @@ on disk rather than re-scanning the maps.
 ## Skeletal meshes do not come out
 
 Vehicle skins ship as `SK_*` skeletal meshes. Every one of them loads and none
-of it populates — `LODModels` null, no materials, no reference skeleton — in
+of it populates, `LODModels` null, no materials, no reference skeleton, in
 all four export formats, base meshes included. That is a CUE4Parse limitation
 against UE 5.6 in this title, not a skin problem. Static meshes are
 unaffected, and maps are entirely static meshes.
@@ -266,7 +264,7 @@ unaffected, and maps are entirely static meshes.
 ```
 
 `x/y/z` are in the **same world frame as `map_heights.json` and
-`map_actors.json`** — no recalibration between them. That holds by
+`map_actors.json`**, no recalibration between them. That holds by
 construction: all three walk the identical persistent-level and
 gameplay-sublevel packages under the identical "a component sits at identity
 in an already-composed level" assumption.
@@ -276,7 +274,7 @@ in an already-composed level" assumption.
 Binary glTF 2.0, no materials or textures. The path on disk mirrors the UE
 package path with the leading `/Game` swapped for whatever content-plugin path
 CUE4Parse resolved it to. The glTF exporter owns that naming, not the driver
-script — so **read the actual filenames under `meshes/` rather than
+script, so **read the actual filenames under `meshes/` rather than
 recomputing the mapping**.
 
 **Not every mesh in a `_scene.json` has a `.glb`.** Backdrop and excluded
@@ -286,14 +284,14 @@ file on disk; do not treat the miss as an error.
 
 ### `<out>/map_actors.json`
 
-Per map, a list of placed actors matching the class filter — `PlayerStart`,
+Per map, a list of placed actors matching the class filter, `PlayerStart`,
 `BP_CaptureZone_C`, `BP_AmmunitionZone_C`, `BP_HealZone_C`,
-`BP_AbilityResourceZone_C`, `BP_NoGoZone_C`, `BP_BasicSpawnWall_C` — each with
+`BP_AbilityResourceZone_C`, `BP_NoGoZone_C`, `BP_BasicSpawnWall_C`, each with
 its class, name, label, world location and rotation, a `worldFrame` flag, and
 any scalar properties the actor carries.
 
 `worldFrame` is false when the actor's `RootComponent` transform is *not*
-directly world-space — an actor nested inside a blueprint or level instance,
+directly world-space, an actor nested inside a blueprint or level instance,
 whose transform still needs composing. On these maps it is true for everything
 these classes cover.
 
@@ -302,5 +300,5 @@ these classes cover.
 Per map, the `ALevelBounds` box, plus the World-Partition check. One field is
 worth reading carefully: `boxExtentTagPresent`. If it is false, `BoxExtent`
 was not serialised, which means it equals the class default (commonly 1,1,1
-for a runtime-fitted level-bounds box) — and then `scale` **is** the world
+for a runtime-fitted level-bounds box), and then `scale` **is** the world
 half-extent rather than a multiplier on it.
