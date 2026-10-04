@@ -9,7 +9,8 @@ Each of the four is resolved the same way, most specific first:
 
 The defaults find the game through Steam's own bookkeeping -- the registry
 says where Steam is, `libraryfolders.vdf` says which drives hold libraries,
-and the game sits under `steamapps/common/Tyr Playtest` in one of them. That
+and the game sits under `steamapps/common/Tyr` in one of them (or the old
+`Tyr Playtest` folder, if that is what you have). That
 covers a normal install on any drive; a copy of the game somewhere Steam does
 not know about needs --paks.
 
@@ -26,7 +27,9 @@ HERE = Path(__file__).resolve().parent
 
 # Steam's own layout under a library root. Both halves are fixed by Steam, not
 # by the game: "steamapps/common/<install dir>" is where every game lands.
-GAME_INSTALL_DIR = "Tyr Playtest"
+# Early Access installs as "Tyr"; the playtest used "Tyr Playtest". The first
+# one present wins.
+GAME_INSTALL_DIRS = ("Tyr", "Tyr Playtest")
 PAKS_SUBPATH = Path("Tyr") / "Content" / "Paks"
 # UE4SS writes its .usmap dump beside itself, and this is where UE4SS goes.
 USMAP_SUBPATH = Path("Tyr") / "Binaries" / "Win64" / "ue4ss"
@@ -84,11 +87,12 @@ def _steam_roots():
 
 
 def find_game_dir():
-    """The `Tyr Playtest` install directory, or None."""
-    for root in _steam_roots():
-        cand = root / "steamapps" / "common" / GAME_INSTALL_DIR
-        if cand.is_dir():
-            return cand
+    """The game's install directory, or None."""
+    for name in GAME_INSTALL_DIRS:
+        for root in _steam_roots():
+            cand = root / "steamapps" / "common" / name
+            if (cand / PAKS_SUBPATH).is_dir():
+                return cand
     return None
 
 
@@ -134,7 +138,7 @@ def resolve(args):
     if not paks:
         raise SystemExit(
             "cannot find the game's paks. Pass --paks, e.g.\n"
-            r'  --paks "C:\Program Files (x86)\Steam\steamapps\common\Tyr Playtest\Tyr\Content\Paks"')
+            r'  --paks "C:\Program Files (x86)\Steam\steamapps\common\Tyr\Tyr\Content\Paks"')
     paks = Path(paks)
     if not paks.is_dir():
         raise SystemExit("--paks is not a directory: %s" % paks)

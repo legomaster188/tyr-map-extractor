@@ -40,6 +40,11 @@ MAPS = {
     "scorch": ("TyrMapScorch", "Map_Scorch"),
     "wind-valley": ("TyrMapWindValley", "Map_WindValley"),
     "expanse": ("TyrMapExpanse", "Map_Expanse"),
+    # Core, added by the 2026-09-24 patch. Map_Core_V2 is the persistent level
+    # (the plugin's PluginMap asset, and what a replay header names).
+    # Map_Core_LD is an unloaded greybox and Map_Core_Lighting_V2 is lighting
+    # only; neither is scanned.
+    "core": ("TyrMapCore", "Map_Core_V2"),
 }
 
 # Real class names, read off the distinct export types in Map_Divide.

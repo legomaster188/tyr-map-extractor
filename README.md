@@ -1,6 +1,6 @@
 # tyr-map-extractor
 
-Pull the maps out of [Tyr](https://store.steampowered.com/app/2862420/):
+Pull the maps out of [Tyr](https://store.steampowered.com/app/2445260/):
 terrain, props, textures and spawn points, from your own game install. Nothing
 extracted is redistributed here; this is the tooling, you run it against the
 files you already have.
@@ -28,7 +28,8 @@ python extract_map_geometry.py --export --only scorch,fields
 Positions are Unreal world units, centimetres with Z up, and everything above is
 in the same frame, so the props stand on the terrain without any fitting.
 
-Six maps: Divide, Fields, Ravine, Scorch, Wind Valley, Expanse.
+Seven maps: Divide, Fields, Ravine, Scorch, Wind Valley, Expanse, and Core,
+the map the 2026-09-24 patch added.
 
 ## Setting it up
 
@@ -52,12 +53,13 @@ there by default.
 **3. Find your game files.** The extractor needs the `Paks` folder:
 
 ```
-<Steam>\steamapps\common\Tyr Playtest\Tyr\Content\Paks
+<Steam>\steamapps\common\Tyr\Tyr\Content\Paks
 ```
 
 You do not usually have to type it. The scripts read Steam's registry key and
 its `libraryfolders.vdf`, so a normal install on any drive is found on its own.
-If yours isn't, pass `--paks "<that path>"`.
+If yours isn't, pass `--paks "<that path>"`. An old playtest install (`Tyr Playtest`) is still
+found if that's all there is.
 
 **4. The mapping file.** UE 5.6 uses unversioned property serialisation, which
 means the packages carry field *values* with no field *names*. A `.usmap`
@@ -65,8 +67,9 @@ mapping file supplies the names. Without one, nothing readable comes out.
 
 One ships in this repo:
 `Tyr-5.6.0-30304+++Tyr+release-dd6777a8.usmap`, dumped from game build
-CL-30304. It still parses the current build, since the property layouts for maps
-and meshes have not moved, and the scripts pick it up automatically.
+CL-30304. It still parses the current build (checked against CL-36373, the patch
+that added Core), since the property layouts for maps and meshes have not
+moved, and the scripts pick it up automatically.
 
 If a patch eventually breaks it, dump a fresh one with
 [UE4SS](https://github.com/UE4SS-RE/RE-UE4SS):
@@ -100,12 +103,23 @@ Fields and Wind Valley keep some of their actors in that second `_Gameplay`
 sublevel. The scripts scan both and merge; if you call the extractor by hand,
 scan both yourself.
 
+Core's persistent level is `Map_Core_V2`, not `Map_Core`:
+
+```
+Tyr/Plugins/GameFeatures/Maps/TyrMapCore/Content/Maps/Map_Core_V2
+```
+
+It is also the first map whose buildings are Packed Level Actors stored inside
+the map's own plugin (`/TyrMapCore/Maps/PLA/...`) rather than under `/Game`.
+An extractor built before this change skips them without an error and Core
+comes back with no buildings, so rebuild if yours is older.
+
 **Look at one map without extracting anything.** `--meshscene` is the
 inventory pass: every mesh, every instance, no geometry:
 
 ```
 TyrExtract\bin\Release\net10.0\TyrExtract.exe ^
-  --paks "<Steam>\steamapps\common\Tyr Playtest\Tyr\Content\Paks" ^
+  --paks "<Steam>\steamapps\common\Tyr\Tyr\Content\Paks" ^
   --usmap "Tyr-5.6.0-30304+++Tyr+release-dd6777a8.usmap" ^
   --meshscene Tyr/Plugins/GameFeatures/Maps/TyrMapScorch/Content/Maps/Map_Scorch ^
   --dumpout scorch_scene.json
@@ -120,7 +134,7 @@ python extract_map_geometry.py --export --only scorch,fields
 ```
 
 Scene JSON plus a `.glb` per mesh, into `out\`. Drop `--export` for the
-inventory only, which is much faster. Drop `--only` for all six maps. Add
+inventory only, which is much faster. Drop `--only` for all seven maps. Add
 `--lods` afterwards to re-export foliage at every LOD, if 18,000-triangle
 trees are too expensive for whatever you're drawing in.
 
@@ -194,7 +208,7 @@ Shapes in full, and the awkward parts of each:
 
 **Expanse is no longer in the paks.** It was in an earlier build. Today
 `Map_Expanse` doesn't resolve to a file, so it comes back as zero actors and a
-failed landscape while the other five extract normally. That's the game, not
+failed landscape while the other six extract normally. That's the game, not
 the tool. It's left in the map table because it may come back.
 
 **The game patches roughly monthly.** Nothing here reads a version number, so a

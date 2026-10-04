@@ -268,6 +268,20 @@ static CUE4Parse.UE4.Assets.IPackage LoadPkg(CUE4Parse.FileProvider.DefaultFileP
     }
 }
 
+// A blueprint class package the mesh scan may load: "/Game/..." or a
+// game-feature plugin's own mount ("/TyrMapCore/..."). NOT "/Script/..."
+// (native classes, no package) and NOT "/Engine/...". This used to be "/Game"
+// only, which was fine while every Packed Level Actor lived under /Game/World/.
+// Core is the first map whose PLAs live inside its plugin
+// (/TyrMapCore/Maps/PLA/BP_LI_Core_Structures_*), and the "/Game"-only test
+// dropped every building on the map without an error.
+static bool IsContentMount(string path)
+{
+    if (!path.StartsWith("/")) return false;
+    return !path.StartsWith("/Script/", StringComparison.OrdinalIgnoreCase)
+        && !path.StartsWith("/Engine/", StringComparison.OrdinalIgnoreCase);
+}
+
 // Rotate a local-space vector by a UE FRotator (degrees), matching
 // FRotationMatrix's row-vector convention (v' = v * M). Needed because
 // placed actors (and the Landscape actor itself) can carry a non-zero yaw,
@@ -1159,9 +1173,9 @@ if (meshScenePkg != null)
         string? cursor = classPkg;
         for (int depth = 0; depth < 8 && cursor != null && seen.Add(cursor); depth++)
         {
-            if (!cursor.StartsWith("/Game", StringComparison.OrdinalIgnoreCase)) break;
+            if (!IsContentMount(cursor)) break;
             CUE4Parse.UE4.Assets.IPackage cpkg;
-            try { cpkg = provider.LoadPackage(cursor); }
+            try { cpkg = LoadPkg(provider, cursor); }
             catch { classPkgFailures++; break; }
             string? super = null;
             foreach (var e in cpkg.GetExports())
@@ -1348,7 +1362,13 @@ if (meshScenePkg != null)
         if (!IsWorldFrameActor(actor)) continue;
         string? classPkg = null;
         try { classPkg = actor.Class?.Outer?.Name.ToString(); } catch { }
-        if (classPkg == null || !classPkg.StartsWith("/Game", StringComparison.OrdinalIgnoreCase)) continue;
+        if (classPkg == null || !IsContentMount(classPkg)) continue;
+        // The level script actor's class package IS the map being scanned
+        // (Map_Core_V2_C lives in /TyrMapCore/Maps/Map_Core_V2). The old
+        // "/Game" test skipped it by accident; skip it on purpose, so the
+        // wider test adds Core's buildings and nothing else.
+        var scanLeaf = meshScenePkg.Replace('\\', '/').Split('/')[^1];
+        if (classPkg.Split('/')[^1].Equals(scanLeaf, StringComparison.OrdinalIgnoreCase)) continue;
         var tpls = ClassTemplates(classPkg);
         if (tpls.Smc.Count == 0 && tpls.Gcc.Count == 0) continue;
 

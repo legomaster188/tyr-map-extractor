@@ -160,7 +160,7 @@ baked to one 2048² texture, and the game itself switches to it past
 `RVT Blend Distance Start`. It is a real terrain albedo with none of a
 minimap's furniture, no contour lines, no painted drop shadows, no icons.
 
-Five of the six maps have one. Where the material instance does not override
+Six of the seven maps have one. Where the material instance does not override
 the parameter, the reference lives in the parent material's expression graph,
 which cooking strips, but the asset is at the same path under the same name,
 so fetch it there by convention. Expanse has no `Landscape/Textures` folder at
@@ -168,6 +168,12 @@ all and has no bake; it degrades to whatever shading a renderer does from the
 heights alone. **Do not let a missing texture fall back to another map's.**
 Every map has a file called `T_Landscape_C`; guessing between them is worse
 than failing.
+
+Core is the exception to the naming. Its bake is `T_Landscape_C1` (plus
+`T_Landscape_NM`, no `_R`) under `/Game/World/Core/Landscape/Textures/`, so a
+lookup for `T_Landscape_C` finds nothing there. Core's parent material also
+still names Fields' bakes in its defaults, left over from where it was copied;
+take the one in Core's own folder.
 
 `_NM` fails on three maps with `Detex decompression failed: not initialized`.
 Those normal maps are BC5, which CUE4Parse routes through a native `Detex.dll`
